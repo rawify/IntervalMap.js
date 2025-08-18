@@ -1,7 +1,7 @@
 {
     "name": "intervalmap",
     "title": "IntervalMap.js",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "The RAW Interval Map library",
     "homepage": "https://github.com/rawify/IntervalMap.js",
     "bugs": "https://github.com/rawify/IntervalMap.js/issues",

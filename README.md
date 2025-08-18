@@ -23,9 +23,9 @@ It builds on top of **[Interval.js](https://www.npmjs.com/package/@rawify/interv
 ## Installation
 
 ```bash
-npm install @rawify/interval @rawify/interval-map
+npm install intervalmap
 # or
-yarn add @rawify/interval @rawify/interval-map
+yarn add intervalmap
 ````
 
 ## Usage

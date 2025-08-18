@@ -1,5 +1,5 @@
 /**
- * @license IntervalMap.js v0.0.1 8/19/2025
+ * @license IntervalMap.js v0.0.2 8/19/2025
  * https://github.com/rawify/IntervalMap.js
  *
  * Copyright (c) 2025, Robert Eisele (https://raw.org/)
