@@ -1,0 +1,82 @@
+{
+    "name": "intervalmap",
+    "title": "IntervalMap.js",
+    "version": "0.0.1",
+    "description": "The RAW Interval Map library",
+    "homepage": "https://github.com/rawify/IntervalMap.js",
+    "bugs": "https://github.com/rawify/IntervalMap.js/issues",
+    "keywords": [
+        "interval",
+        "range",
+        "map",
+        "interval tree",
+        "interval map"
+    ],
+    "private": false,
+    "main": "./dist/intervalmap.js",
+    "module": "./dist/intervalmap.mjs",
+    "browser": "./dist/intervalmap.min.js",
+    "unpkg": "./dist/intervalmap.min.js",
+    "types": "./intervalmap.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./intervalmap.d.mts",
+                "default": "./dist/intervalmap.mjs"
+            },
+            "require": {
+                "types": "./intervalmap.d.ts",
+                "default": "./dist/intervalmap.js"
+            },
+            "browser": {
+                "types": "./intervalmap.d.ts",
+                "default": "./dist/intervalmap.min.js"
+            },
+            "default": {
+                "types": "./intervalmap.d.ts",
+                "default": "./dist/intervalmap.js"
+            }
+        },
+        "./package.json": "./package.json"
+    },
+    "typesVersions": {
+        "<4.7": {
+            "*": [
+                "intervalmap.d.ts"
+            ]
+        }
+    },
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/rawify/IntervalMap.js.git"
+    },
+    "funding": {
+        "type": "github",
+        "url": "https://github.com/sponsors/rawify"
+    },
+    "author": {
+        "name": "Robert Eisele",
+        "email": "robert@raw.org",
+        "url": "https://raw.org/"
+    },
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    },
+    "directories": {
+        "test": "tests"
+    },
+    "scripts": {
+        "test": "mocha tests/*.js",
+        "build": "crude-build IntervalMap"
+    },
+    "devDependencies": {
+        "chai": "^5.3.1",
+        "crude-build": "^0.1.0",
+        "mocha": "^11.7.1"
+    },
+    "dependencies": {
+        "@rawify/interval": "^0.0.1"
+    }
+}
