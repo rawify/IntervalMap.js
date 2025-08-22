@@ -108,9 +108,26 @@ In-order traversal.
 
 In-order snapshot of the map.
 
-### `clear(): this` · `getSize(): number` · `isEmpty(): boolean` · `toString(): string` · `clone(): IntervalMap`
+### `clear(): this`
 
-Maintenance and utilities.
+Resets the AVL tree.
+
+### `getSize(): number`
+
+Gets the number of elements in the tree.
+
+### `isEmpty(): boolean`
+
+Checks if the tree is empty
+
+### `toString(): string`
+
+Gets a string representation of the tree
+
+### `clone(): IntervalMap`
+
+Clones the `IntervalMap` object
+
 
 ### `static fromArray(pairs, mergeSame = false): IntervalMap`
 
