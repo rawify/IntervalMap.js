@@ -1,5 +1,5 @@
 /**
- * @license IntervalMap.js v0.0.2 8/19/2025
+ * @license IntervalMap.js v0.0.3 8/22/2025
  * https://github.com/rawify/IntervalMap.js
  *
  * Copyright (c) 2025, Robert Eisele (https://raw.org/)
@@ -11,36 +11,37 @@ import Interval from '@rawify/interval';
 /**
  * @constructor
  *
- * @param {Interval} i
- * @param {*} v
+ * @param {Interval} interval
+ * @param {*} value
  */
-function IntervalMapNode(i, v) {
-    this['i'] = i;          // Interval
-    this['v'] = v;          // Value
-    this['m'] = i['b'];     // Max endpoint in subtree
-    this['h'] = 1;          // Height
-    this['l'] = null;       // Left
-    this['r'] = null;       // Right
+function IntervalMapNode(interval, value) {
+    this['i'] = interval;
+    this['v'] = value;
+    this['m'] = interval['b']; // Max endpoint in subtree
+    this['h'] = 1;             // Height
+    this['l'] = null;          // Left
+    this['r'] = null;          // Right
 }
 
-function height(n) {
-    return n ? n['h'] : 0;
+function height(node) {
+    return node ? node['h'] : 0;
 }
 
-function update(n) {
+function update(node) {
     // update height + max
-    const hl = height(n['l']), hr = height(n['r']);
-    n['h'] = (hl > hr ? hl : hr) + 1;
-    let m = n['i']['b'];
-    if (n['l'] && n['l']['m'] > m)
-        m = n['l']['m'];
-    if (n['r'] && n['r']['m'] > m)
-        m = n['r']['m'];
-    n['m'] = m;
-    return n;
+    const hl = height(node['l']);
+    const hr = height(node['r']);
+    node['h'] = (hl > hr ? hl : hr) + 1;
+    let maxEnd = node['i']['b'];
+    if (node['l'] && node['l']['m'] > maxEnd)
+        maxEnd = node['l']['m'];
+    if (node['r'] && node['r']['m'] > maxEnd)
+        maxEnd = node['r']['m'];
+    node['m'] = maxEnd;
+    return node;
 }
 
-function bf(n) {
+function balanceFactor(n) {
     return height(n['l']) - height(n['r']);
 }
 
@@ -56,19 +57,19 @@ function rotR(y) {
     update(y); return update(x);
 }
 
-function rebalance(n) {
-    const b = bf(n);
+function rebalance(node) {
+    const b = balanceFactor(node);
     if (b > 1) { // Left heavy
-        if (bf(n['l']) < 0)
-            n['l'] = rotL(n['l']);
-        return rotR(n);
+        if (balanceFactor(node['l']) < 0)
+            node['l'] = rotL(node['l']);
+        return rotR(node);
     }
     if (b < -1) { // Right heavy
-        if (bf(n['r']) > 0)
-            n['r'] = rotR(n['r']);
-        return rotL(n);
+        if (balanceFactor(node['r']) > 0)
+            node['r'] = rotR(node['r']);
+        return rotL(node);
     }
-    return n;
+    return node;
 }
 
 
@@ -87,31 +88,31 @@ IntervalMap.prototype = {
 
     /**
      * Insert or replace a value for an interval.
-     * @param {Interval} it
-     * @param {*} val
+     * @param {Interval} interval
+     * @param {*} value
      * @return {IntervalMap}
      */
-    'set': function (it, val) {
+    'set': function (interval, value) {
 
-        if (!(it instanceof Interval))
+        if (!(interval instanceof Interval))
             throw new Error('IntervalMap.set expects Interval');
 
         const self = this;
-        function ins(n) {
-            if (!n) {
+        function ins(node) {
+            if (!node) {
                 self['size']++;
-                return new IntervalMapNode(it, val);
+                return new IntervalMapNode(interval, value);
             }
-            const c = it['compareTo'](n['i']);
-            if (c < 0) {
-                n['l'] = ins(n['l']);
-            } else if (c > 0) {
-                n['r'] = ins(n['r']);
+            const res = interval['compareTo'](node['i']);
+            if (res < 0) {
+                node['l'] = ins(node['l']);
+            } else if (res > 0) {
+                node['r'] = ins(node['r']);
             } else {
-                n['v'] = val;
-                return n;
+                node['v'] = value;
+                return node;
             }
-            return rebalance(update(n));
+            return rebalance(update(node));
         }
         this['root'] = ins(this['root']);
         return this;
@@ -119,26 +120,27 @@ IntervalMap.prototype = {
 
     /**
      * Exact lookup by interval equality.
-     * @param {Interval} it
+     * @param {Interval} interval
      * @return {*|null}
      */
-    'get': function (it) {
+    'get': function (interval) {
 
-        if (!(it instanceof Interval))
+        if (!(interval instanceof Interval))
             throw new Error('IntervalMap.get expects Interval');
 
-        let n = this['root'];
-        const a = it['a'], b = it['b'];
-        while (n) {
-            const ni = n['i'];
+        let node = this['root'];
+        const a = interval['a'];
+        const b = interval['b'];
+        while (node) {
+            const ni = node['i'];
             if (a < ni['a']) {
-                n = n['l'];
+                node = node['l'];
             } else if (a > ni['a']) {
-                n = n['r'];
+                node = node['r'];
             } else {
                 if (b === ni['b'])
-                    return n['v'];
-                n = (b < ni['b']) ? n['l'] : n['r'];
+                    return node['v'];
+                node = (b < ni['b']) ? node['l'] : node['r'];
             }
         }
         return null;
@@ -146,12 +148,12 @@ IntervalMap.prototype = {
 
     /**
      * Remove an interval (exact match). Returns true if removed.
-     * @param {Interval} it
+     * @param {Interval} interval
      * @return {boolean}
      */
-    'delete': function (it) {
+    'delete': function (interval) {
 
-        if (!(it instanceof Interval))
+        if (!(interval instanceof Interval))
             throw new Error('IntervalMap.delete expects Interval');
 
         let removed = false;
@@ -162,34 +164,34 @@ IntervalMap.prototype = {
             return n;
         }
 
-        function del(n) {
-            if (!n)
+        function del(node) {
+            if (!node)
                 return null;
-            const c = it['compareTo'](n['i']);
+            const res = interval['compareTo'](node['i']);
 
-            if (c < 0) {
-                n['l'] = del(n['l']);
-            } else if (c > 0) {
-                n['r'] = del(n['r']);
+            if (res < 0) {
+                node['l'] = del(node['l']);
+            } else if (res > 0) {
+                node['r'] = del(node['r']);
             } else {
                 removed = true;
                 // node with 0 or 1 child
-                if (!n['l'] || !n['r']) {
-                    const tmp = n['l'] ? n['l'] : n['r'];
-                    n = tmp ? tmp : null;
+                if (!node['l'] || !node['r']) {
+                    const tmp = node['l'] ? node['l'] : node['r'];
+                    node = tmp ? tmp : null;
                 } else {
                     // two children: inorder successor
-                    const s = minNode(n['r']);
-                    n['i'] = s['i']; n['v'] = s['v'];
-                    n['r'] = (function delMin(n2, key) {
+                    const s = minNode(node['r']);
+                    node['i'] = s['i']; node['v'] = s['v'];
+                    node['r'] = (function delMin(n2, key) {
                         if (!n2) return null;
                         if (n2 === s) return n2['r'];
                         n2['l'] = delMin(n2['l'], key);
                         return rebalance(update(n2));
-                    })(n['r'], s);
+                    })(node['r'], s);
                 }
             }
-            return n ? rebalance(update(n)) : null;
+            return node ? rebalance(update(node)) : null;
         }
 
         this['root'] = del(this['root']);
@@ -200,54 +202,56 @@ IntervalMap.prototype = {
 
     /**
      * Checks if any stored interval overlaps the query interval.
-     * @param {Interval} q
+     * @param {Interval} interval
      * @return {boolean}
      */
-    'hasOverlap': function (q) {
+    'hasOverlap': function (interval) {
 
-        if (!(q instanceof Interval))
+        if (!(interval instanceof Interval))
             throw new Error('IntervalMap.hasOverlap expects Interval');
 
-        let n = this['root'];
-        const qa = q['a'], qb = q['b'];
-        while (n) {
-            const ni = n['i'];
-            if (ni['a'] <= qb && qa <= ni['b']) return true; // hit
+        let node = this['root'];
+        const qa = interval['a'];
+        const qb = interval['b'];
+        while (node) {
+            const ni = node['i'];
+            if (ni['a'] <= qb && qa <= ni['b'])
+                return true; // hit
             // prune left if its max < qa
-            if (n['l'] && n['l']['m'] >= qa) {
-                n = n['l'];
+            if (node['l'] && node['l']['m'] >= qa) {
+                node = node['l'];
                 continue;
             }
-            n = n['r'];
+            node = node['r'];
         }
         return false;
     },
 
     /**
      * Collect all entries overlapping the query interval.
-     * @param {Interval} q
+     * @param {Interval} interval
      * @return {!Array<{interval:Interval,value:*}>}
      */
-    'getOverlapping': function (q) {
+    'getOverlapping': function (interval) {
 
-        if (!(q instanceof Interval))
+        if (!(interval instanceof Interval))
             throw new Error('IntervalMap.getOverlapping expects Interval');
 
-        const out = [], qa = q['a'], qb = q['b'];
-        function dfs(n) {
+        const out = [], qa = interval['a'], qb = interval['b'];
+        function dfs(node) {
 
-            if (!n)
+            if (!node)
                 return;
 
-            if (n['l'] && n['l']['m'] >= qa)
-                dfs(n['l']);
+            if (node['l'] && node['l']['m'] >= qa)
+                dfs(node['l']);
 
-            const ni = n['i'];
+            const ni = node['i'];
             if (ni['a'] <= qb && qa <= ni['b'])
-                out.push({ interval: ni, value: n['v'] });
+                out.push({ interval: ni, value: node['v'] });
 
-            if (n['r'] && n['i']['a'] <= qb)
-                dfs(n['r']);
+            if (node['r'] && node['i']['a'] <= qb)
+                dfs(node['r']);
         }
         dfs(this['root']);
         return out;
@@ -255,41 +259,42 @@ IntervalMap.prototype = {
 
     /**
      * Collect all entries whose interval contains a point x.
-     * @param {number} x
+     * @param {number} value
      * @return {!Array<{interval:Interval,value:*}>|null}
      */
-    'getAt': function (x, getAll = false) {
+    'getAt': function (value, getAll = false) {
 
         if (getAll) {
-            const out = [];
-            function dfs(n) {
+            const ret = [];
+            function dfs(node) {
 
-                if (!n)
+                if (!node)
                     return;
 
-                if (n['l'] && n['l']['m'] >= x)
-                    dfs(n['l']);
+                if (node['l'] && node['l']['m'] >= value)
+                    dfs(node['l']);
 
-                const ni = n['i'];
-                if (ni['a'] <= x && x <= ni['b'])
-                    out.push({ interval: ni, value: n['v'] });
+                const ni = node['i'];
+                if (ni['a'] <= value && value <= ni['b'])
+                    ret.push({ interval: ni, value: node['v'] });
 
-                if (n['r'] && ni['a'] <= x)
-                    dfs(n['r']);
+                if (node['r'] && ni['a'] <= value)
+                    dfs(node['r']);
             }
             dfs(this['root']);
-            return out;
+            return ret;
         }
 
-        let n = this['root'];
-        while (n) {
-            const ia = n['i']['a'], ib = n['i']['b'];
-            if (x < ia) {
-                n = n['l'];
-            } else if (x > ib) {
-                n = n['r'];
+        let node = this['root'];
+        while (node) {
+            const ia = node['i']['a'];
+            const ib = node['i']['b'];
+            if (value < ia) {
+                node = node['l'];
+            } else if (value > ib) {
+                node = node['r'];
             } else {
-                return n['v']; // ia <= x <= ib
+                return node['v']; // ia <= x <= ib
             }
         }
         return null;
@@ -318,15 +323,15 @@ IntervalMap.prototype = {
      * @return {IntervalMap}
      */
     'forEach': function (fn) {
-        let st = [], n = this['root'];
-        while (st.length || n) {
-            while (n) {
-                st.push(n);
-                n = n['l'];
+        let stack = [], node = this['root'];
+        while (stack.length || node) {
+            while (node) {
+                stack.push(node);
+                node = node['l'];
             }
-            n = st.pop();
-            fn(n['i'], n['v']);
-            n = n['r'];
+            node = stack.pop();
+            fn(node['i'], node['v']);
+            node = node['r'];
         }
         return this;
     },
@@ -337,18 +342,18 @@ IntervalMap.prototype = {
     'toArray': function () {
         const res = [];
         this['forEach'](function (i, v) {
-            res.push({ interval: i, value: v });
+            res.push({ 'interval': i, 'value': v });
         });
         return res;
     },
 
     /** @return {string} */
     'toString': function () {
-        const s = [];
+        const str = [];
         this['forEach'](function (i, v) {
-            s.push('[' + i['a'] + ', ' + i['b'] + '] -> ' + v);
+            str.push('[' + i['a'] + ', ' + i['b'] + '] -> ' + v);
         });
-        return s.join(', ');
+        return str.join(', ');
     },
 
     /**
@@ -356,17 +361,18 @@ IntervalMap.prototype = {
      * @return {IntervalMap}
      */
     'clone': function () {
-        const out = new IntervalMap();
-        function cpy(n) {
-            if (!n) return null;
-            const nn = new IntervalMapNode(new Interval(n['i']['a'], n['i']['b']), n['v']);
-            nn['l'] = cpy(n['l']); nn['r'] = cpy(n['r']);
-            nn['h'] = n['h']; nn['m'] = n['m'];
+        const ret = new IntervalMap();
+        function copy(node) {
+            if (!node)
+                return null;
+            const nn = new IntervalMapNode(new Interval(node['i']['a'], node['i']['b']), node['v']);
+            nn['l'] = copy(node['l']); nn['r'] = copy(node['r']);
+            nn['h'] = node['h']; nn['m'] = node['m'];
             return nn;
         }
-        out['root'] = cpy(this['root']);
-        out['size'] = this['size'];
-        return out;
+        ret['root'] = copy(this['root']);
+        ret['size'] = this['size'];
+        return ret;
     }
 };
 
@@ -380,9 +386,12 @@ IntervalMap['fromArray'] = function (pairs, mergeSame) {
     // 1) sort by (a,b) and stable by value if mergeSame
     let arr = pairs.slice();
     arr.sort(function (x, y) {
-        const ix = x['interval'], iy = y['interval'];
-        if (ix['a'] !== iy['a']) return ix['a'] - iy['a'];
-        if (ix['b'] !== iy['b']) return ix['b'] - iy['b'];
+        const ix = x['interval'];
+        const iy = y['interval'];
+        if (ix['a'] !== iy['a'])
+            return ix['a'] - iy['a'];
+        if (ix['b'] !== iy['b'])
+            return ix['b'] - iy['b'];
         return mergeSame ? (x['value'] < y['value'] ? -1 : x['value'] > y['value'] ? 1 : 0) : 0;
     });
 
@@ -409,7 +418,8 @@ IntervalMap['fromArray'] = function (pairs, mergeSame) {
 
     // 3) build perfectly balanced AVL (bottom-up)
     function build(lo, hi) {
-        if (lo > hi) return null;
+        if (lo > hi) 
+            return null;
         const mid = (lo + hi) >> 1;
         const pair = arr[mid];
         const node = new IntervalMapNode(pair['interval'], pair['value']);
